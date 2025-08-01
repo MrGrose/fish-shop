@@ -62,7 +62,7 @@ def get_products(session, api_url):
 @handle_error_response
 def get_image(session, api_url, url_image):
     url = f"{api_url}{url_image}"
-    response = session.get(url, stream=True)
+    response = session.get(url, stream=True, timeout=5)
     response.raise_for_status()
     return BytesIO(response.content)
 
