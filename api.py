@@ -166,6 +166,7 @@ def clear_user_cart(session, api_url, user_id):
         remove_from_cart(session, api_url, item["id"])
 
 
+@handle_error_response
 def create_order(session, api_url, user_id, email, order_details):
     total = sum(item["product"]["price"] * item["quantity"] for item in order_details["cart_items"])
     product_items = [{"product": item["product"]["id"], "quantity": item["quantity"]} for item in order_details["cart_items"]]
