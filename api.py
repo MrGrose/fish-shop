@@ -36,7 +36,7 @@ def handle_error_response(func):
             raise ServerError(f"Ошибка запроса: {req_err}") from req_err
 
         except Exception as e:
-            raise Exception("Произошла неизвестная ошибка") from e
+            raise ServerError("Произошла неизвестная ошибка") from e
 
     return wrapper
 
@@ -45,17 +45,17 @@ def handle_error_response(func):
 def init_strapi_session(token):
     session = requests.Session()
     session.headers.update({
-        'Authorization': f'Bearer {token}',
-        'Content-Type': 'application/json'
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
     })
     return session
 
 
 @handle_error_response
 def get_products(session, api_url):
-    response = session.get(f"{api_url}/api/products?populate=*")
+    response = session.get(f"{api_url}/api/products?populate=*", timeout=5)
     response.raise_for_status()
-    products = {item['id']: item for item in response.json().get('data', [])}
+    products = {item["id"]: item for item in response.json().get("data", [])}
     return products
 
 
@@ -69,11 +69,11 @@ def get_image(session, api_url, url_image):
 
 @handle_error_response
 def get_or_create_user_cart(session, api_url, user_id):
-    cart_response = session.get(f"{api_url}/api/carts?filters[telegramId][$eq]={user_id}")
+    cart_response = session.get(f"{api_url}/api/carts?filters[telegramId][$eq]={user_id}", timeout=5)
     cart_response.raise_for_status()
     cart_data = cart_response.json()
 
-    if cart_data['meta']['pagination']['total'] == 0:
+    if cart_data["meta"]["pagination"]["total"] == 0:
         payload = {"data": {"telegramId": user_id}}
         create_response = session.post(f"{api_url}/api/carts", json=payload)
         create_response.raise_for_status()
@@ -81,27 +81,27 @@ def get_or_create_user_cart(session, api_url, user_id):
 
 @handle_error_response
 def get_user_cart_with_items(session, api_url, user_id):
-    response = session.get(f"{api_url}/api/carts?filters[telegramId][$eq]={user_id}&populate=cart_items.product")
+    response = session.get(f"{api_url}/api/carts?filters[telegramId][$eq]={user_id}&populate=cart_items.product", timeout=5)
     response.raise_for_status()
     data = response.json()
-    if data.get('meta', {}).get('pagination', {}).get('total', 0) == 0:
+    if data.get("meta", {}).get("pagination", {}).get("total", 0) == 0:
         return None
-    cart_items = data.get('data', [])[0]
+    cart_items = data.get("data", [])[0]
     return cart_items
 
 
 @handle_error_response
 def add_to_cart(session, api_url, product_id, user_id, quantity):
     cart = get_user_cart_with_items(session, api_url, user_id)
-    cart_id = cart['id']
-    cart_items = cart.get('cart_items', [])
+    cart_id = cart["id"]
+    cart_items = cart.get("cart_items", [])
 
-    existing_item = next((item for item in cart_items if item.get('product', {}).get('id') == int(product_id)), None)
+    existing_item = next((item for item in cart_items if item.get("product", {}).get("id") == int(product_id)), None)
 
     if existing_item:
-        new_quantity = existing_item.get('quantity', 0) + quantity
+        new_quantity = existing_item.get("quantity", 0) + quantity
         update_payload = {"data": {"quantity": new_quantity}}
-        update_url = f"{api_url}/api/cart-items/{existing_item['documentId']}"
+        update_url = f"{api_url}/api/cart-items/{existing_item["documentId"]}"
         response = session.put(update_url, json=update_payload)
         response.raise_for_status()
     else:
@@ -117,13 +117,16 @@ def add_to_cart(session, api_url, product_id, user_id, quantity):
 
 
 def get_display_cart(cart):
-    cart_items = cart.get('cart_items', [])
+    if not cart:
+        return {"cart_display": "🛒 Ваша корзина пуста", "count_items": 0}
+
+    cart_items = cart.get("cart_items", [])
     short_text_product = []
     for item in cart_items:
-        quantity = item.get('quantity')
-        product = item.get('product')
-        title = product.get('title') if product else None
-        price = product.get('price') if product else 0
+        quantity = item.get("quantity")
+        product = item.get("product")
+        title = product.get("title", "Неизвестный товар")
+        price = product.get("price", 0)
 
         short_text_product.append({
             "quantity": quantity,
@@ -132,21 +135,21 @@ def get_display_cart(cart):
         })
     cart_display = ""
     total_price = 0
-    for entry in short_text_product:
-        total_price += entry['price'] * entry['quantity']
-        cart_display += f"\n{entry['title']} — Количество: {entry['quantity']} Цена: {entry['price'] * entry['quantity']} руб."
+    for text_product in short_text_product:
+        total_price += text_product["price"] * text_product["quantity"]
+        cart_display += f"\n{text_product["title"]} — Количество: {text_product["quantity"]} Цена: {text_product["price"] * text_product["quantity"]} руб."
 
-    cart_display += f"\n\nИтого: {total_price}"
+    cart_display += f"\n\n💳 Итого: {total_price}"
     return {"cart_display": cart_display, "count_items": len(short_text_product)}
 
 
 @handle_error_response
 def remove_from_cart(session, api_url, cart_item_id):
-    response = session.get(f"{api_url}/api/cart-items?filters[id][$eq]={cart_item_id}")
+    response = session.get(f"{api_url}/api/cart-items?filters[id][$eq]={cart_item_id}", timeout=5)
     response.raise_for_status()
     cart_item = response.json()
 
-    document_id = cart_item['data'][0]['documentId']
+    document_id = cart_item["data"][0]["documentId"]
     delete_cart_item = f"{api_url}/api/cart-items/{document_id}"
     del_response = session.delete(delete_cart_item)
     del_response.raise_for_status()
@@ -156,14 +159,16 @@ def remove_from_cart(session, api_url, cart_item_id):
 @handle_error_response
 def clear_user_cart(session, api_url, user_id):
     cart = get_user_cart_with_items(session, api_url, user_id)
-    cart_items = cart.get('cart_items', [])
+    if not cart:
+        return
+    cart_items = cart.get("cart_items", [])
     for item in cart_items:
-        remove_from_cart(session, api_url, item['id'])
+        remove_from_cart(session, api_url, item["id"])
 
 
 def create_order(session, api_url, user_id, email, order_details):
-    total = sum(item['product']['price'] * item['quantity'] for item in order_details['cart_items'])
-    product_items = [{'product': item['product']['id'], 'quantity': item['quantity']} for item in order_details['cart_items']]
+    total = sum(item["product"]["price"] * item["quantity"] for item in order_details["cart_items"])
+    product_items = [{"product": item["product"]["id"], "quantity": item["quantity"]} for item in order_details["cart_items"]]
     order_upload = {
         "data": {
             "email": email,
@@ -173,7 +178,7 @@ def create_order(session, api_url, user_id, email, order_details):
     }
     response = session.post(f"{api_url}/api/orders", json=order_upload)
     response.raise_for_status()
-    order_id = response.json()['data']['id']
+    order_id = response.json()["data"]["id"]
     return create_order_items(session, api_url, order_id, product_items)
 
 
@@ -183,9 +188,9 @@ def create_order_items(session, api_url, order_id, product_items):
     for item in product_items:
         items_upload = {
             "data": {
-                "quantity": item['quantity'],
+                "quantity": item["quantity"],
                 "order": {"connect": order_id},
-                "product": {"connect": item['product']}
+                "product": {"connect": item["product"]}
             }
         }
 
