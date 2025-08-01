@@ -77,11 +77,6 @@ def get_or_create_user_cart(session, api_url, user_id):
         payload = {"data": {"telegramId": user_id}}
         create_response = session.post(f"{api_url}/api/carts", json=payload)
         create_response.raise_for_status()
-        cart = create_response.json()['data']
-    else:
-        cart = cart_data['data'][0]
-
-    return cart['id']
 
 
 @handle_error_response
