@@ -1,6 +1,6 @@
-import requests
-
 from io import BytesIO
+
+import requests
 from errors import handle_error_response
 
 
@@ -84,25 +84,17 @@ def get_display_cart(cart):
         return {"cart_display": "🛒 Ваша корзина пуста", "count_items": 0}
 
     cart_items = cart.get("cart_items", [])
-    product_summaries = []
-    for item in cart_items:
-        quantity = item.get("quantity")
-        product = item.get("product")
-        title = product.get("title", "Неизвестный товар")
-        price = product.get("price", 0)
+    product_summaries = [
+        {
+            "total": item.get("quantity", 0) * item.get("product", {}).get("price", 0),
+            "text": f"\n{item.get('product', {}).get('title', 'Неизвестный товар')} — {item.get('quantity', 0)} кг. Цена: {item.get('quantity', 0) * item.get('product', {}).get('price', 0)} руб."
+        }
+        for item in cart_items
+    ]
+    total_price = sum(item["total"] for item in product_summaries)
+    cart_display = "".join(item["text"] for item in product_summaries)
+    cart_display += f"\n\n💳 Итого: {total_price} руб."
 
-        product_summaries.append({
-            "quantity": quantity,
-            "title": title,
-            "price": price
-        })
-    cart_display = ""
-    total_price = 0
-    for product_summary in product_summaries:
-        total_price += product_summary["price"] * product_summary["quantity"]
-        cart_display += f"\n{product_summary['title']} — Количество: {product_summary['quantity']} Цена: {product_summary['price'] * product_summary['quantity']} руб."
-
-    cart_display += f"\n\n💳 Итого: {total_price}"
     return {"cart_display": cart_display, "count_items": len(product_summaries)}
 
 
