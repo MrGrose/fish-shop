@@ -9,12 +9,16 @@
 3. Добавление/удаление в корзине пользователя
 4. Создание заказа
 
+## Пример работы
+ ![fish-shop](https://private-user-images.githubusercontent.com/147311692/473706869-6cf5fada-ea4c-44e2-bac3-3f486f0bab9a.gif?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NTQxNTYzODksIm5iZiI6MTc1NDE1NjA4OSwicGF0aCI6Ii8xNDczMTE2OTIvNDczNzA2ODY5LTZjZjVmYWRhLWVhNGMtNDRlMi1iYWMzLTNmNDg2ZjBiYWI5YS5naWY_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjUwODAyJTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI1MDgwMlQxNzM0NDlaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT0xNGMxZjRhMmMxOTg2MDk5NzRjMDlmZjdjMTc1ODQ0NzkxZTVlYTRlZDgwNTQzMjQ2M2ZmYmZkODhhNmIxZTc2JlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCJ9.i0aWS8nOgmQz8lGSdy9RbR2x8XnIxEjFjckCD71z4kk)
+
 ## Архитектура
 Архитектура бота состоит из следующих ключевых компонентов:
 - `tg_bot`: Логика обработки команд и взаимодействия с пользователем.
 - `keyboards.py`: Создание клавиатур для взаимодействия.
 - `api.py`: Запросы к сервису Strapi.
 - `utils`: Функции для извлечения и подготовки данных из обновлений Telegram и контекста бота.
+- `errors`: Логика обработки ошибок.
 
 
 
@@ -83,3 +87,4 @@ pip install -r requirements.txt
 ```bash
 python tg_bot.py
 ```
+

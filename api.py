@@ -1,44 +1,7 @@
-from functools import wraps
-from io import BytesIO
-
 import requests
 
-
-class ServerError(Exception):
-    pass
-
-
-class NetworkError(Exception):
-    pass
-
-
-def handle_error_response(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-
-        except requests.ConnectionError as conn_err:
-            raise NetworkError(f"Ошибка сети: {conn_err}") from conn_err
-
-        except requests.HTTPError as http_err:
-            status_code = http_err.response.status_code if http_err.response else None
-            error_messages = {
-                400: "Неправильный запрос",
-                401: "Требуется аутентификация",
-                403: "Доступ запрещен",
-                404: "Ресурс не найден",
-            }
-            error_message = error_messages.get(status_code, "Неизвестная ошибка")
-            raise ServerError(f"Ошибка на стороне сервера: {status_code} - {error_message}") from http_err
-
-        except requests.RequestException as req_err:
-            raise ServerError(f"Ошибка запроса: {req_err}") from req_err
-
-        except Exception as e:
-            raise ServerError("Произошла неизвестная ошибка") from e
-
-    return wrapper
+from io import BytesIO
+from errors import handle_error_response
 
 
 @handle_error_response
